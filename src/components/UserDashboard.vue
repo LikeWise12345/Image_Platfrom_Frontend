@@ -1,48 +1,75 @@
 <template>
-  <div class="dashboard">
-    <!-- Full-screen video player -->
-    <div class="video-feed">
-      <div
-        v-for="video in filteredVideos"
-        :key="video.id"
-        class="video-item"
-        v-show="video.id === currentVideo.id"
-      >
-        <!-- Video player -->
-        <video
-          :src="video.video_file"
-          class="video-player"
-          autoplay
-          muted
-          loop
-          controls
-          type="video/mp4"
-          @click="togglePlay"
-        ></video>
+  <div class="insta-home">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="logo-container">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
+          alt="Instagram"
+          class="logo"
+        />
+      </div>
+      <div class="nav-icons">
+        <span class="icon">🏠</span>
+        <span class="icon">🔍</span>
+        <span class="icon">❤️</span>
+        <span class="icon">👤</span>
+      </div>
+    </nav>
 
-        <!-- Video overlay (like TikTok's UI) -->
-        <div class="video-overlay">
-          <div class="video-info">
-            <h3>{{ video.title }}</h3>
-            <p>{{ video.description }}</p>
-          </div>
-          <div class="video-actions">
-            <button @click="likeVideo(video)" class="action-btn">
-              ❤️ {{ video.likes }}
-            </button>
-            <button @click="shareVideo(video)" class="action-btn">
-              🔗 Share
-            </button>
+    <!-- Feed -->
+    <main class="feed">
+      <div v-for="post in filteredPosts" :key="post.id" class="post-card">
+        <!-- Header -->
+        <div class="post-header">
+          <img src="https://i.pravatar.cc/40" alt="avatar" class="avatar" />
+          <span class="username">{{ post.username || 'user123' }}</span>
+        </div>
+
+        <!-- Image -->
+        <img
+          v-if="post.image_file"
+          class="post-image"
+          :src="post.image_file"
+          alt="Post"
+        />
+
+        <!-- Actions -->
+        <div class="post-actions">
+          <button @click="likePost(post)" title="Like" class="action-btn">❤️</button>
+          <button @click="sharePost(post)" title="Share" class="action-btn">📤</button>
+        </div>
+
+        <!-- Caption -->
+        <div class="post-caption">
+          <strong>{{ post.title }}</strong> — {{ post.description }}
+        </div>
+
+        <!-- Comments Display -->
+        <div class="comments-list">
+          <div v-for="(comment, index) in post.comments" :key="index" class="comment">
+            <strong>{{ comment.username }}</strong> {{ comment.text }}
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Navigation buttons (swipe-like functionality) -->
-    <div class="navigation-buttons">
-      <button @click="prevVideo" class="nav-btn">⬅️ Previous</button>
-      <button @click="nextVideo" class="nav-btn">Next ➡️</button>
-    </div>
+        <!-- Comment Box -->
+        <div class="comment-box">
+          <input
+            v-model="post.newComment"
+            type="text"
+            placeholder="Add a comment..."
+            @keyup.enter="submitComment(post)"
+          />
+          <button @click="submitComment(post)">Post</button>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div v-if="error" class="error">{{ error }}</div>
+
+      <!-- Share Feedback -->
+      <div v-if="copied" class="share-feedback">Link copied to clipboard</div>
+    </main>
   </div>
 </template>
 
@@ -52,162 +79,257 @@ import apiClient from "../axios";
 export default {
   data() {
     return {
-      videos: [], // Store video data
-      currentVideoIndex: 0, // Track the current video index
-      error: null, // Store error message
+      posts: [],
+      error: null,
+      copied: false,
     };
   },
   computed: {
-    // Get the current video
-    currentVideo() {
-      return this.videos[this.currentVideoIndex] || {};
-    },
-    // Filter videos based on search query (if needed)
-    filteredVideos() {
-      return this.videos;
+    filteredPosts() {
+      return this.posts;
     },
   },
   methods: {
-    // Fetch videos from the API
-    async fetchVideos() {
+    async fetchPosts() {
       try {
-        const response = await apiClient.get("http://localhost:8000/api/videos/");
-        this.videos = response.data;
-      } catch (error) {
-        console.error("Error fetching videos: ", error);
-        this.error = "Error fetching videos. Please try again later.";
+        const res = await apiClient.get("http://localhost:8000/api/videos/");
+        // Initialize newComment and comments array per post
+        this.posts = res.data.map((post) => ({
+          ...post,
+          comments: [],
+          newComment: "",
+        }));
+      } catch (e) {
+        console.error("Error fetching posts:", e);
+        this.error = "Could not load posts.";
       }
     },
-    // Navigate to the next video
-    nextVideo() {
-      if (this.currentVideoIndex < this.videos.length - 1) {
-        this.currentVideoIndex++;
-      } else {
-        this.currentVideoIndex = 0; // Loop back to the first video
+    likePost(post) {
+      post.likes = (post.likes || 0) + 1;
+    },
+    sharePost(post) {
+      const link = post.image_file;
+      if (link) {
+        navigator.clipboard.writeText(link);
+        this.copied = true;
+        setTimeout(() => {
+          this.copied = false;
+        }, 2000);
       }
     },
-    // Navigate to the previous video
-    prevVideo() {
-      if (this.currentVideoIndex > 0) {
-        this.currentVideoIndex--;
-      } else {
-        this.currentVideoIndex = this.videos.length - 1; // Loop to the last video
+    submitComment(post) {
+      if (post.newComment.trim()) {
+        post.comments.push({ username: "you", text: post.newComment.trim() });
+        post.newComment = "";
       }
-    },
-    // Toggle video play/pause
-    togglePlay(event) {
-      const video = event.target;
-      if (video.paused) {
-        video.play();
-      } else {
-        video.pause();
-      }
-    },
-    // Like a video
-    likeVideo(video) {
-      video.likes = (video.likes || 0) + 1;
-      // You can add an API call here to update likes on the server
-    },
-    // Share a video
-    shareVideo(video) {
-      navigator.clipboard.writeText(video.video_file);
-      alert("Video link copied to clipboard!");
     },
   },
   created() {
-    // Fetch videos when the component is created
-    this.fetchVideos();
+    this.fetchPosts();
   },
 };
 </script>
 
 <style scoped>
-.dashboard {
-  position: relative;
-  height: 100vh;
-  overflow: hidden;
-  background-color: #000;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+  background-color: #fafafa;
 }
 
-.video-feed {
-  position: relative;
-  height: 100%;
-  width: 100%;
-}
-
-.video-item {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.insta-home {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
 }
 
-.video-player {
+.navbar {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.video-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 20px;
-  color: white;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-}
-
-.video-info h3 {
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-.video-info p {
-  font-size: 16px;
-}
-
-.video-actions {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
+  background-color: #fff;
+  padding: 12px 24px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dbdbdb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 32px;
+}
+
+.nav-icons {
+  display: flex;
+  gap: 20px;
+}
+
+.icon {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.feed {
+  max-width: 600px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 0 16px;
+}
+
+.post-card {
+  background: #fff;
+  border: 1px solid #dbdbdb;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.username {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.post-image {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  background-color: #000;
+}
+
+.post-actions {
+  padding: 10px 12px;
+  display: flex;
+  gap: 16px;
 }
 
 .action-btn {
   background: none;
   border: none;
-  color: white;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.navigation-buttons {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+.action-btn:hover {
+  transform: scale(1.15);
+}
+
+.post-caption {
+  padding: 0 12px 12px 12px;
+  font-size: 14px;
+}
+
+.post-caption strong {
+  font-weight: 600;
+}
+
+.comments-list {
+  padding: 0 12px;
+  font-size: 13px;
+  color: #262626;
+}
+
+.comment {
+  margin-top: 6px;
+}
+
+.comment strong {
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+/* Comment Input */
+.comment-box {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid #efefef;
 }
 
-.nav-btn {
-  background: rgba(255, 255, 255, 0.2);
+.comment-box input {
+  flex: 1;
   border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 16px;
+  background: none;
+  font-size: 14px;
+  padding: 6px;
+  outline: none;
 }
 
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
+.comment-box button {
+  border: none;
+  background: none;
+  color: #0095f6;
+  font-weight: 600;
+  cursor: pointer;
+  padding-left: 8px;
+  font-size: 14px;
+}
+
+.comment-box button:disabled {
+  color: #b2dffc;
+  cursor: default;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.share-feedback {
+  position: fixed;
+  bottom: 30px;
+  background-color: #262626;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 </style>
+
+
+
+
+
+

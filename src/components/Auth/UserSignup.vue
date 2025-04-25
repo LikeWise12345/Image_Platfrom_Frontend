@@ -1,24 +1,36 @@
 <template>
   <div class="auth-container">
     <div class="auth-card">
-      <!-- TikTok-like logo or title -->
+      <!-- Instagram logo and text -->
       <div class="auth-logo">
-        <img src="@/assets/tiktok-logo.png" alt="TikTok Logo" class="logo" />
-        <h1 class="auth-title">Sign Up</h1>
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png"
+          alt="Instagram Icon"
+          class="logo-icon"
+        />
+        <h2 class="auth-subtitle">
+          Sign up to see photos and videos from your friends.
+        </h2>
       </div>
 
       <!-- Sign-up form -->
-      <form @submit.prevent="signup">
+      <form @submit.prevent="signup" class="auth-form">
+        <input
+          v-model="email"
+          type="text"
+          placeholder="Mobile Number or Email"
+          class="auth-input"
+        />
+        <input
+          v-model="fullName"
+          type="text"
+          placeholder="Full Name"
+          class="auth-input"
+        />
         <input
           v-model="username"
           type="text"
           placeholder="Username"
-          class="auth-input"
-        />
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email"
           class="auth-input"
         />
         <input
@@ -30,14 +42,22 @@
         <button type="submit" class="auth-button">Sign Up</button>
       </form>
 
+      <!-- Terms -->
+      <p class="terms-text">
+        By signing up, you agree to our
+        <a href="#" class="terms-link">Terms</a>,
+        <a href="#" class="terms-link">Data Policy</a> and
+        <a href="#" class="terms-link">Cookies Policy</a>.
+      </p>
+
       <!-- Error message -->
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    </div>
 
-      <!-- Log-in link -->
-      <p class="auth-switch">
-        Already have an account?
-        <router-link to="/login" class="auth-link">Log In</router-link>
-      </p>
+    <!-- Bottom switch -->
+    <div class="auth-switch">
+      Have an account?
+      <router-link to="/login" class="auth-link">Log In</router-link>
     </div>
   </div>
 </template>
@@ -50,6 +70,7 @@ export default {
   data() {
     return {
       email: "",
+      fullName: "",
       username: "",
       password: "",
       errorMessage: "",
@@ -60,26 +81,20 @@ export default {
       try {
         const response = await axios.post("http://localhost:8000/api/signup/", {
           email: this.email,
+          full_name: this.fullName,
           username: this.username,
           password: this.password,
         });
 
-        // Assuming you get a success response back
         if (response.data.success) {
-          this.$router.push("/login"); // Redirect to login page after successful signup
+          this.$router.push("/login");
         } else {
           this.errorMessage = "Signup failed, please try again!";
         }
       } catch (error) {
         console.error("Signup error", error);
-        if (error.response) {
-          // Server responded with an error
-          this.errorMessage =
-            error.response.data.message || "Signup failed. Please try again!";
-        } else {
-          // Network or other issues
-          this.errorMessage = "Network error. Please check your connection.";
-        }
+        this.errorMessage =
+          error.response?.data?.message || "An error occurred. Please try again.";
       }
     },
   },
@@ -87,100 +102,163 @@ export default {
 </script>
 
 <style scoped>
-/* Container styling */
+/* Main container */
 .auth-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #fe2c55, #ff6b6b); /* TikTok-like gradient */
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fdfbfb, #ebedee);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Card styling */
+/* Signup card */
 .auth-card {
   background: #ffffff;
-  padding: 2rem;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 2.5rem 3rem;
+  border: 1px solid #dbdbdb;
+  border-radius: 12px;
+  max-width: 350px;
+  width: 100%;
   text-align: center;
-  width: 100%;
-  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
-/* Logo and title styling */
+/* Logo area */
 .auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.logo-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 0.5rem;
+}
+
+.logo-text {
+  width: 150px;
+  margin-bottom: 1rem;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #8e8e8e;
+  font-weight: 500;
   margin-bottom: 1.5rem;
+  line-height: 1.4;
 }
 
-.auth-logo .logo {
-  width: 80px;
-  height: auto;
-  margin-bottom: 1rem;
+/* Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
 }
 
-.auth-title {
-  font-size: 28px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-/* Input field styling */
 .auth-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 16px;
+  background-color: #fafafa;
+  border: 1px solid #dbdbdb;
+  padding: 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  margin-bottom: 8px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: border 0.2s ease-in-out;
 }
 
 .auth-input:focus {
-  border-color: #fe2c55;
+  border-color: #a8a8a8;
+  background-color: #fff;
 }
 
-/* Button styling */
+/* Button */
 .auth-button {
-  background: #fe2c55;
-  color: white;
+  background: linear-gradient(to right, #ff5858, #f857a6);
   border: none;
-  padding: 12px 15px;
-  font-size: 18px;
+  color: white;
+  padding: 10px;
+  font-weight: 600;
+  font-size: 14px;
   border-radius: 8px;
-  width: 100%;
   cursor: pointer;
-  transition: background 0.3s;
-  margin-top: 1rem;
+  margin-top: 10px;
+  transition: background 0.3s ease;
 }
 
 .auth-button:hover {
-  background: #d81c3b;
+  background: linear-gradient(to right, #f857a6, #ff5858);
 }
 
-/* Error message styling */
+/* Terms */
+.terms-text {
+  font-size: 11px;
+  color: #999;
+  margin-top: 1.5rem;
+  line-height: 1.4;
+}
+
+.terms-link {
+  color: #00376b;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+}
+
+/* Error */
 .error-message {
-  color: #ff0000;
-  font-size: 14px;
-  margin-top: 1rem;
+  margin-top: 12px;
+  color: #ed4956;
+  background: #ffe6e6;
+  padding: 6px;
+  font-size: 12px;
+  border-radius: 4px;
 }
 
-/* Sign-up link styling */
+/* Login switch */
 .auth-switch {
   margin-top: 1.5rem;
+  padding: 1rem;
   font-size: 14px;
-  color: #666;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #dbdbdb;
+  border-radius: 12px;
+  max-width: 350px;
+  width: 100%;
 }
 
 .auth-link {
-  color: #fe2c55;
-  font-weight: bold;
+  color: #0095f6;
+  font-weight: 600;
   text-decoration: none;
-  transition: color 0.3s;
+  margin-left: 4px;
 }
 
 .auth-link:hover {
-  color: #d81c3b;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .auth-card,
+  .auth-switch {
+    padding: 1.5rem;
+  }
+
+  .logo-text {
+    width: 120px;
+  }
+
+  .logo-icon {
+    width: 50px;
+    height: 50px;
+  }
 }
 </style>
+

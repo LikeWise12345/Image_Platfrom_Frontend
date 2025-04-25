@@ -1,65 +1,87 @@
 <template>
-  <div class="video-upload-fullscreen">
-    <meta name="csrf-token" content="{{ csrf_token }}" />
-    <!-- Header Section -->
-    <header class="header">
-      <h1>Upload Your Video</h1>
-      <p>Share your amazing content with the world! Fill in the details below to get started.</p>
+  <div class="upload-page">
+    <!-- Instagram-style header -->
+    <header class="upload-header">
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Instagram_logo.svg"
+        alt="Instagram"
+        class="logo"
+      />
+      <h2>New Post</h2>
     </header>
 
-    <!-- Form Section -->
-    <form class="form" @submit.prevent="uploadVideo" enctype="multipart/form-data">
+    <!-- Upload Form -->
+    <form class="upload-form" @submit.prevent="uploadMedia" enctype="multipart/form-data">
+      <!-- Title Input -->
       <div class="form-group">
-        <label for="title">Video Title:</label>
+        <label for="title">Title</label>
         <input
           type="text"
           v-model="video.title"
           id="title"
-          placeholder="Enter a captivating title"
+          placeholder="Write a caption..."
           required
         />
       </div>
 
+      <!-- Description Input -->
       <div class="form-group">
-        <label for="description">Description:</label>
+        <label for="description">Description</label>
         <textarea
           v-model="video.description"
           id="description"
-          placeholder="Provide a brief overview of your video"
+          placeholder="Add some details..."
         ></textarea>
       </div>
 
+      <!-- Hashtags -->
       <div class="form-group">
-        <label for="hashtags">Hashtags:</label>
+        <label for="hashtags">Hashtags</label>
         <input
           type="text"
           v-model="video.hashtags"
           id="hashtags"
-          placeholder="e.g., #video #upload"
+          placeholder="#summer #travel"
         />
       </div>
 
+      <!-- Media Upload -->
       <div class="form-group file-upload">
-        <label for="video_file">Upload Video File:</label>
+        <label for="video_file">Upload Media</label>
         <div class="upload-box" @click="triggerFileInput">
-          <span v-if="!videoFile">Click to upload</span>
+          <span v-if="!videoFile">Click to select video or image</span>
           <span v-else>{{ videoFile.name }}</span>
           <input
             type="file"
-            @change="handleFileUpload"
-            accept="video/*"
-            id="video_file"
-            required
             ref="fileInput"
-            style="display: none;"
+            id="video_file"
+            accept="video/*,image/*"
+            @change="handleFileUpload"
+            style="display: none"
+            required
+          />
+        </div>
+        <div class="media-preview" v-if="mediaPreview">
+          <video
+            v-if="isVideo"
+            :src="mediaPreview"
+            controls
+            class="preview-video"
+          ></video>
+          <img
+            v-else
+            :src="mediaPreview"
+            alt="Preview"
+            class="preview-image"
           />
         </div>
       </div>
 
-      <button type="submit" class="btn-upload">Upload Now</button>
+      <!-- Upload Button -->
+      <button type="submit" class="btn-upload">Share</button>
     </form>
 
-    <!-- Feedback Section -->
+    <!-- Feedback Message -->
     <div v-if="message" :class="['message', success ? 'success' : 'error']">
       {{ message }}
     </div>
@@ -78,20 +100,25 @@ export default {
         hashtags: "",
       },
       videoFile: null,
+      mediaPreview: null,
+      isVideo: false,
       message: "",
       success: false,
     };
   },
   methods: {
     triggerFileInput() {
-      this.$refs.fileInput.click(); // Trigger the file input when the upload box is clicked
+      this.$refs.fileInput.click();
     },
     handleFileUpload(event) {
-      this.videoFile = event.target.files[0];
+      const file = event.target.files[0];
+      this.videoFile = file;
+      this.isVideo = file.type.startsWith("video");
+      this.mediaPreview = URL.createObjectURL(file);
     },
-    async uploadVideo() {
+    async uploadMedia() {
       if (!this.videoFile) {
-        this.message = "Please select a video file to upload.";
+        this.message = "Please select a file to upload.";
         this.success = false;
         return;
       }
@@ -102,36 +129,27 @@ export default {
       formData.append("hashtags", this.video.hashtags);
       formData.append("video_file", this.videoFile);
 
-      // Get CSRF token from the meta tag
       const csrfToken = document
         .querySelector('meta[name="csrf-token"]')
-        .getAttribute("content");
+        ?.getAttribute("content");
 
       try {
-        const response = await axios.post(
-          "http://localhost:8000/videos/upload/",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              "X-CSRFToken": csrfToken,
-            },
-          }
-        );
+        const res = await axios.post("http://localhost:8000/videos/upload/", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            ...(csrfToken && { "X-CSRFToken": csrfToken }),
+          },
+        });
 
-        this.message = `Video uploaded successfully: ${response.data.title}`;
+        this.message = `Post uploaded successfully: ${res.data.title}`;
         this.success = true;
 
-        // Clear the form
-        this.video = {
-          title: "",
-          description: "",
-          hashtags: "",
-        };
+        this.video = { title: "", description: "", hashtags: "" };
         this.videoFile = null;
-      } catch (error) {
-        console.error(error);
-        this.message = "Error uploading video. Please try again.";
+        this.mediaPreview = null;
+      } catch (err) {
+        console.error(err);
+        this.message = "Failed to upload. Please try again.";
         this.success = false;
       }
     },
@@ -140,129 +158,123 @@ export default {
 </script>
 
 <style scoped>
-/* Full-Screen Styling */
-.video-upload-fullscreen {
+.upload-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #fff;
+  color: #262626;
+}
+
+/* Header */
+.upload-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  width: 100vw;
-  background-color: #000; /* TikTok-like dark background */
-  color: #fff; /* White text for contrast */
-  padding: 20px;
-  box-sizing: border-box;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #dbdbdb;
+  padding-bottom: 12px;
 }
 
-/* Header Section */
-.header {
-  margin-bottom: 30px;
-  text-align: center;
+.upload-header .logo {
+  height: 30px; /* Adjust logo height */
+  width: auto;  /* Ensure aspect ratio is preserved */
+  margin-right: 8px; /* Space between logo and title */
 }
 
-.header h1 {
-  font-size: 36px;
-  color: #fff; /* White text */
-}
-
-.header p {
-  font-size: 16px;
-  color: #aaa; /* Light gray text */
-  margin-top: 8px;
-}
-
-/* Form Section */
-.form {
-  width: 100%;
-  max-width: 500px;
+/* Form */
+.upload-form {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
-.form-group {
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-label {
-  font-weight: bold;
+/* Form Group */
+.form-group label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #fff; /* White text */
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 input,
 textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #444; /* Dark border */
-  border-radius: 5px;
+  padding: 10px 12px;
+  border: 1px solid #dbdbdb;
+  border-radius: 6px;
   font-size: 14px;
-  background-color: #333; /* Dark input background */
-  color: #fff; /* White text */
-  transition: border-color 0.3s ease;
+  background: #fafafa;
+  color: #262626;
 }
 
 textarea {
-  resize: none;
-  min-height: 100px;
+  resize: vertical;
+  min-height: 80px;
 }
 
-input:focus,
-textarea:focus {
-  border-color: #fe2c55; /* TikTok-like red color */
-}
-
-/* File Upload Section */
+/* File Upload */
 .file-upload .upload-box {
-  border: 2px dashed #444; /* Dashed border */
-  border-radius: 5px;
+  border: 2px dashed #dbdbdb;
   padding: 20px;
   text-align: center;
+  border-radius: 8px;
   cursor: pointer;
-  background-color: #333; /* Dark background */
-  color: #aaa; /* Light gray text */
+  color: #999;
+  background: #fafafa;
   transition: background-color 0.3s ease;
 }
 
-.file-upload .upload-box:hover {
-  background-color: #444; /* Slightly lighter on hover */
+.upload-box:hover {
+  background-color: #f0f0f0;
 }
 
-/* Button Styling */
+/* Media Preview */
+.media-preview {
+  margin-top: 15px;
+}
+
+.preview-video,
+.preview-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+/* Upload Button */
 .btn-upload {
-  background-color: #fe2c55; /* TikTok-like red color */
+  background-color: #3897f0;
   color: #fff;
+  padding: 12px;
   border: none;
-  padding: 12px 20px;
+  border-radius: 6px;
   font-size: 16px;
-  font-weight: bold;
-  border-radius: 5px;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  width: 100%;
 }
 
 .btn-upload:hover {
-  background-color: #d81c3b; /* Darker red on hover */
+  background-color: #2a78c2;
 }
 
-/* Feedback Message */
+/* Feedback */
 .message {
   margin-top: 20px;
-  padding: 15px;
-  border-radius: 5px;
+  padding: 12px;
+  border-radius: 6px;
   font-size: 14px;
+  text-align: center;
 }
 
 .success {
-  background-color: #d4edda;
+  background: #d4edda;
   color: #155724;
 }
 
 .error {
-  background-color: #f8d7da;
+  background: #f8d7da;
   color: #721c24;
 }
 </style>
+

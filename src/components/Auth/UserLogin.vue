@@ -1,9 +1,9 @@
 <template>
   <div class="auth-container">
     <div class="auth-card">
-      <!-- TikTok-like logo or title -->
+      <!-- Instagram logo and title -->
       <div class="auth-logo">
-        <img src="@/assets/tiktok-logo.png" alt="TikTok Logo" class="logo" />
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram Logo" class="logo" />
         <h1 class="auth-title">Log In</h1>
       </div>
 
@@ -46,35 +46,29 @@ export default {
       username: "",
       password: "",
       errorMessage: "",
-      csrfToken: "", // Store CSRF token
+      csrfToken: "",
     };
   },
   methods: {
     async fetchCsrfToken() {
       try {
-        // Request CSRF token from Django API
         const response = await axios.get("http://127.0.0.1:8000/api/csrf/", {
-          withCredentials: true, // Important: Allows cookies to be sent
+          withCredentials: true,
         });
 
-        console.log("CSRF Response:", response.data); // Debugging
-
-        // Extract CSRF token
         if (response.data.csrfToken) {
           this.csrfToken = response.data.csrfToken;
-          console.log("CSRF Token Set:", this.csrfToken);
         } else {
           throw new Error("CSRF token missing in response.");
         }
       } catch (error) {
-        console.error("CSRF Token fetch error:", error);
+        console.error("CSRF fetch error:", error);
         this.errorMessage = "Failed to fetch CSRF token. Please refresh.";
       }
     },
 
     async login() {
       try {
-        // Ensure CSRF token is fetched before login
         if (!this.csrfToken) {
           await this.fetchCsrfToken();
         }
@@ -87,9 +81,9 @@ export default {
           },
           {
             headers: {
-              "X-CSRFToken": this.csrfToken, // Send CSRF token in header
+              "X-CSRFToken": this.csrfToken,
             },
-            withCredentials: true, // Ensure Django receives cookies
+            withCredentials: true,
           }
         );
 
@@ -109,108 +103,127 @@ export default {
     },
   },
   created() {
-    this.fetchCsrfToken(); // Fetch CSRF token when component loads
+    this.fetchCsrfToken();
   },
 };
 </script>
 
-
-
 <style scoped>
-/* Container styling */
+/* Container background with Instagram-style minimalism */
 .auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(135deg, #fe2c55, #ff6b6b);
+  background-color: #fafafa;
 }
 
 /* Card styling */
 .auth-card {
   background: #ffffff;
-  padding: 2rem;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 2.5rem 3rem;
+  border: 1px solid #dbdbdb;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
   text-align: center;
+  max-width: 350px;
   width: 100%;
-  max-width: 400px;
 }
 
-/* Logo and title styling */
+/* Logo and title */
 .auth-logo {
   margin-bottom: 1.5rem;
 }
 
-.auth-logo .logo {
-  width: 80px;
-  height: auto;
-  margin-bottom: 1rem;
+.logo {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 10px;
 }
 
 .auth-title {
-  font-size: 28px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 1rem;
+  font-size: 26px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 1.5rem;
 }
 
-/* Input field styling */
+/* Input styling */
 .auth-input {
   width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 16px;
+  padding: 10px;
+  margin: 6px 0;
+  font-size: 14px;
+  border: 1px solid #dbdbdb;
+  border-radius: 6px;
+  background-color: #fafafa;
+  color: #262626;
   outline: none;
-  transition: border-color 0.3s;
 }
 
 .auth-input:focus {
-  border-color: #fe2c55;
+  border-color: #a8a8a8;
+  background-color: #ffffff;
 }
 
 /* Button styling */
 .auth-button {
-  background: #fe2c55;
-  color: white;
-  border: none;
-  padding: 12px 15px;
-  font-size: 18px;
-  border-radius: 8px;
   width: 100%;
+  padding: 10px;
+  margin-top: 12px;
+  background-color: #0095f6;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s;
-  margin-top: 1rem;
+  transition: background-color 0.3s ease;
+  font-size: 14px;
 }
 
 .auth-button:hover {
-  background: #d81c3b;
+  background-color: #0077c2;
 }
 
-/* Error message styling */
+/* Error message */
 .error-message {
-  color: #ff0000;
-  font-size: 14px;
-  margin-top: 1rem;
+  margin-top: 10px;
+  color: #ed4956;
+  font-size: 13px;
 }
 
-/* Sign-up link styling */
+/* Switch (Sign up) */
 .auth-switch {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   font-size: 14px;
-  color: #666;
+  color: #8e8e8e;
 }
 
 .auth-link {
-  color: #fe2c55;
-  font-weight: bold;
+  color: #0095f6;
+  font-weight: 600;
   text-decoration: none;
-  transition: color 0.3s;
+  margin-left: 4px;
 }
 
 .auth-link:hover {
-  color: #d81c3b;
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 400px) {
+  .auth-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .logo {
+    width: 80px;
+    height: 80px;
+  }
+
+  .auth-title {
+    font-size: 22px;
+  }
 }
 </style>
+
